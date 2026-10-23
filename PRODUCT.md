@@ -1,48 +1,48 @@
-# Product
+# News Desk (news aggregator demo) — Product truth
 
-<!-- impeccable:product-schema 1 -->
+> Inferred from the code and copy (no user interview). Checked against the portfolio card claims review
+> (`portfolio-site-web/docs/audits/CARD-CLAIMS-REVIEW-2026-10.md`, row `news-aggregator`) on 2026-10-23.
 
-## Platform
+## What it is
 
-web
+A client-side reading desk over five authored sample stories, labelled on the page as "CURATED SAMPLE · NOT LIVE
+NEWS". Read and saved marks live in the visitor's browser (`localStorage`, key `news-desk-v2`).
 
-## Users
+## Who it is for
 
-Solo operators and builders who need a small, calm reading queue for deciding what deserves attention next.
+Solo operators and builders who want to see a small, calm reading queue: what is worth a closer look and why,
+rather than an endless feed.
 
-## Product Purpose
+## What works today
 
-News Desk turns a short set of saved headlines into a readable briefing. Success means a visitor can scan what changed, understand why a story is worth a closer look, filter by beat, and mark a story for later without confusing this local demo with a live news service.
+1. Five sample stories across four beats (Signals, Products, Research, Practice), each with source, time, read
+   length, summary and a "why read it" note.
+2. Filter by beat (with per-beat counts) and search headline, summary, source or beat (case-insensitive).
+3. Pick a lead story; mark it read/unread or save it for later. The queue shows unread and saved counts.
+4. Marks survive a reload in the same browser. Only boolean read/saved marks of known stories are taken from
+   storage, so corrupt or edited data cannot break the page or change the story text; if storage is blocked, marks
+   last for the visit only.
+5. `/api/mcp` answers JSON-RPC `initialize`, `tools/list` and `tools/call` with read-only tools `list_stories`
+   (optional beat), `get_story` and `search_stories` over the same sample stories; unknown tools, ids or beats
+   get JSON-RPC errors.
+6. Front-end and server errors go to Sentry (errors only, personal data stripped) when `NEXT_PUBLIC_SENTRY_DSN` is set.
 
-## Positioning
+## What does not work (and must not be claimed)
 
-This is a personal reading desk, not an infinite news feed. It values editorial context and a deliberate next action over volume, recency theatre, or a generic card wall.
+- No RSS, Hacker News or Reddit feeds, no AI relevance scoring, no deduplication and no time saving to claim (the
+  portfolio card was corrected to Prototype in the 2026-10 review).
+- No adding stories, accounts, shared queue or sync.
 
-## Operating Context
+## Live URL and deploy state
 
-The current app is a browser-only portfolio demonstration with deterministic sample stories. There is no RSS/API connection, account, shared queue, or claim that these are current events. Saved and read state may stay in localStorage.
+- Live: https://news-aggregator.bookchaowalit.com (HTTP 200 on 2026-10-23).
+- The Vercel project `bookchaowalit-news-aggregator-frontend` is deployed only by CLI. Its last production deploy is
+  the CVE patch (2026-10-23, CLI, commit 80622c5). Its Git link names the old repository
+  `bookchaowalit/bookchaowalit-news-aggregator-frontend`, so a push to `main` does not deploy: the L2 work (tests,
+  Sentry, lib store, truthful MCP tools) stays undeployed until the owner reconnects Vercel Git to this repository
+  (owner action D9). `NEXT_PUBLIC_SENTRY_DSN` is already set on the Vercel project (Sentry project
+  `content-news-aggregator-web`, org `personal-yu0`).
 
-## Capabilities and Constraints
+## Boundaries
 
-- Show a small briefing with category, source, timing, headline, and a useful why-read note.
-- Search and filter by beat.
-- Select a story for a fuller reading note, then mark it read or save it for later.
-- Keep the local-only limitation visible in the interface.
-- Support keyboard and touch input, reduced motion, empty results, and narrow screens.
-- Do not invent live timestamps, external reporting, or a backend integration.
-
-## Evidence on Hand
-
-- Existing implementation: `app/page.tsx`, `app/globals.css`, and `app/layout.tsx`.
-- Evidence is limited to deterministic sample stories in the repository; no live news feed or production dataset is available.
-
-## Product Principles
-
-- Context earns the click.
-- A short queue beats an endless feed.
-- “Read later” is a meaningful state, not decoration.
-- Sample content must look like sample content.
-
-## Accessibility & Inclusion
-
-Use semantic regions, buttons, labels, visible focus, strong contrast, clear status announcements, readable type, reduced-motion support, and never rely on category color alone.
+- Browser-only apart from the stateless, read-only `/api/mcp` route.
