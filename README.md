@@ -1,8 +1,9 @@
 # News Desk (news aggregator demo)
 
-A calm reading desk over five authored sample stories: filter by beat, search headline, summary, source or beat,
-pick a lead story to read its "why read it" note, and mark it read or save it for later. Read and saved marks stay
-in this browser (`localStorage`). There is no live feed behind it.
+A calm reading desk over five authored sample stories, on the shared Reader shell (see `READER.md`): search
+headline, summary, source or beat live (nothing is sent anywhere), filter by beat, and open a story's page
+(`/stories/<id>`) to read its "why read it" note and mark it read or save it for later. Read and saved marks stay
+in this browser (`localStorage`, key `news-desk-v2`, unchanged). There is no live feed behind it.
 
 Live: https://news-aggregator.bookchaowalit.com (deployed by Vercel CLI; it can lag `main`, see `PRODUCT.md`).
 

@@ -1,56 +1,14 @@
----
-name: News Desk
-description: A printed sample briefing that helps a solo operator decide what deserves a closer look.
-colors:
-  paper: "#f1eadb"
-  paper-deep: "#e4d8c4"
-  ink: "#17211c"
-  ink-soft: "#3f4b43"
-  rule: "#a89e8c"
-  muted: "#59645b"
-  red: "#ad3d2d"
-  red-deep: "#7f2c21"
-  gold: "#9a7029"
-typography:
-  display:
-    fontFamily: "Newsreader, Georgia, serif"
-    fontSize: "clamp(3.4rem, 8vw, 6.5rem)"
-    fontWeight: 560
-    lineHeight: 0.88
-    letterSpacing: "-0.085em"
-  body:
-    fontFamily: "Newsreader, Georgia, serif"
-    fontSize: "1rem"
-    fontWeight: 400
-    lineHeight: 1.65
-  data:
-    fontFamily: "Source Code Pro, SFMono-Regular, Consolas, monospace"
-    fontSize: "0.62rem"
-    fontWeight: 400
-    lineHeight: 1.4
-spacing:
-  frame: "1220px"
-  section: "84px"
-  content: "20px"
-components:
-  active-beat:
-    backgroundColor: "{colors.red}"
-    textColor: "{colors.paper}"
-    padding: "10px 13px"
----
+# Design
 
-# Design System: News Desk
+Since 2026-11-19 News Desk uses the shared Reader shell (see `READER.md`): Geist via `next/font`, the
+`--rs-*` tokens in `app/reader-shell.css` (light and dark, WCAG 2.2 AA), one h1 per page, 44px targets
+and a forced-colors fallback. The newsprint look (9–10px mono labels, #59645b on paper-deep at 4.39:1,
+2.2:1 rules, 34–37px buttons, a masthead and sidebar that pushed every story below the first view on
+phones) is retired.
 
-## Overview
-
-**Creative North Star: “The printed briefing on a working desk.”**
-
-News Desk treats a news aggregator as an editorial decision surface, not an endless feed. Warm paper, fine rules, a single red press mark, and a small edition stamp make the sample boundary visible. The lead story gets a reading surface; the rest of the edition stays in a deliberate row index. The calendar direction contributes its tear-off sense of time and a thin rule separating the edition from the queue, while the product truth keeps the content plainly labelled as deterministic sample material.
-
-## Rules
-
-- Paper is the ambient surface; ink is the reading voice; red marks selected/current action only.
-- Use the data face for source, time, category, and count; keep headlines in the readable sans voice.
-- Stories are editorial rows and a lead reading, never a same-size card wall.
-- Saved/read state has text and controls; the red dot is supplemental, never the only signal.
-- The edition stamp states the sample boundary so visual polish never implies live reporting.
+- `/` — eyebrow "sample notes, not live news", h1, lede; live search (a `role="search"` box, no form),
+  beat chips (buttons with `aria-pressed`, counts follow the search), result count, unread/saved line,
+  then every note as a row (beat, read time, read/saved state, title, summary) and two empty states.
+- `/stories/<id>` — header (beat, source, read time, time label), "Why read it", Mark as read / Save for
+  later (this browser only, with a status message) and previous / next.
+- The footer says the notes are authored samples with no feed or outside sources behind them.
