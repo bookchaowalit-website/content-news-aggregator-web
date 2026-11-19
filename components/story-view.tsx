@@ -3,16 +3,23 @@
 import { useState, useSyncExternalStore } from "react";
 import { ArticleHeader, Pager, Prose, neighbours, type PagerLink } from "@/components/reader-shell";
 import { NewsFrame } from "@/components/news-frame";
-import { SEED, storyStore, updateStory, type Story } from "@/lib/news";
+import { SEED, filterStories, isCategory, storyStore, updateStory, type Story } from "@/lib/news";
+import { deskState } from "@/components/desk-view";
 
-/** One note: header, summary, why read it, then Mark as read / Save for later (this browser only) and previous / next. */
-export function StoryView({ id }: { id: string }) {
+/**
+ * One note: header, summary, why read it, then Mark as read / Save for later (this browser only) and previous / next.
+ * Opened from a searched or filtered edition (?q= / ?beat=), Back returns to it and previous / next stay inside it.
+ */
+export function StoryView({ id, q = "", beat = "" }: { id: string; q?: string; beat?: string }) {
   const stories = useSyncExternalStore(storyStore.subscribe, storyStore.getSnapshot, storyStore.getServerSnapshot);
   const [notice, setNotice] = useState("");
-  const index = stories.findIndex((s) => s.id === id);
-  const story = stories[index] ?? SEED.find((s) => s.id === id)!;
-  const { previous, next } = neighbours(stories, index);
-  const link = (s?: Story): PagerLink | undefined => (s ? { href: `/stories/${s.id}`, title: s.title } : undefined);
+  const story = stories.find((s) => s.id === id) ?? SEED.find((s) => s.id === id)!;
+  const cut = filterStories(stories, isCategory(beat) ? beat : "All", q);
+  const inCut = cut.some((s) => s.id === id);
+  const list = inCut ? cut : stories;
+  const from = inCut ? deskState(q, isCategory(beat) ? beat : "") : "";
+  const { previous, next } = neighbours(list, list.findIndex((s) => s.id === id));
+  const link = (s?: Story): PagerLink | undefined => (s ? { href: `/stories/${s.id}${from}`, title: s.title } : undefined);
   const change = (changes: Pick<Partial<Story>, "read" | "saved">, message: string) => {
     storyStore.update((current) => updateStory(current, story.id, changes));
     setNotice(message);
@@ -20,7 +27,7 @@ export function StoryView({ id }: { id: string }) {
   return (
     <NewsFrame>
       <article className="rs-article">
-        <ArticleHeader back={{ href: "/", label: "The edition" }} tags={[story.category]} title={story.title} lede={story.summary} meta={[story.source, `${story.readMinutes} min read`, story.time]} />
+        <ArticleHeader back={{ href: `/${from}`, label: "The edition" }} tags={[story.category]} title={story.title} lede={story.summary} meta={[story.source, `${story.readMinutes} min read`, story.time]} />
         <Prose>
           <h2>Why read it</h2>
           <p>{story.why}</p>

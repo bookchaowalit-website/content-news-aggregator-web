@@ -5,6 +5,8 @@ import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import Home from "@/app/page";
 import { StoryView } from "@/components/story-view";
+import { DeskView } from "@/components/desk-view";
+import McpPage from "@/app/mcp/page";
 import StoryPage, { generateMetadata, generateStaticParams } from "@/app/stories/[id]/page";
 import sitemap from "@/app/sitemap";
 import robots from "@/app/robots";
@@ -40,8 +42,8 @@ afterEach(() => {
 });
 
 describe("edition index", () => {
-  it("server-renders every note as a link with its beat, read time and state, labelled as sample", () => {
-    const html = renderToString(<Home />).replace(/<!-- -->/g, "");
+  it("server-renders every note as a link with its beat, read time and state, labelled as sample", async () => {
+    const html = renderToString(await Home({})).replace(/<!-- -->/g, "");
     expect(html).toContain("sample notes, not live news");
     expect(html).toContain('href="/stories/small-models"');
     const text = html.replace(/<[^>]+>/g, "");
@@ -51,7 +53,7 @@ describe("edition index", () => {
   });
 
   it("filters live by search and beat; chip counts follow the search; empty state leads back", () => {
-    act(() => root.render(<Home />));
+    act(() => root.render(<DeskView />));
     expect($(".rs-count")!.textContent).toBe("5 notes");
     click(button("Products"));
     expect(texts(".rs-entry-link")).toHaveLength(2);
@@ -90,6 +92,39 @@ describe("note pages", () => {
     }
     expect(await generateMetadata(params("missing"))).toEqual({});
     await expect(StoryPage(params("missing"))).rejects.toThrow();
+  });
+});
+
+describe("follow-ups", () => {
+  it("keeps search and beat in the address and in story links, and Back returns to the same cut", async () => {
+    const html = renderToString(await Home({ searchParams: Promise.resolve({ q: ["interface"], beat: "Products" }) }));
+    expect(html).toContain('href="/stories/calm-software?beat=Products&amp;q=interface"');
+    act(() => root.render(<DeskView initialQuery="small" initialBeat="Nope" />));
+    expect(window.location.search).toBe("?q=small");
+    click(button("Practice"));
+    expect(window.location.search).toBe("?beat=Practice&q=small");
+    expect($(".rs-entry-link")!.getAttribute("href")).toBe("/stories/shipping?beat=Practice&q=small");
+    act(() => root.render(<StoryView id="calm-software" beat="Products" />));
+    expect($(".rs-back")!.getAttribute("href")).toBe("/?beat=Products");
+    expect($('.rs-pager a[rel="next"]')!.getAttribute("href")).toBe("/stories/interfaces?beat=Products");
+    act(() => root.render(<StoryView id="calm-software" q="interface" beat="Products" />));
+    expect($(".rs-back")!.getAttribute("href")).toBe("/?beat=Products&q=interface");
+    expect($(".rs-pager")).toBeNull();
+    // A cut that does not hold the note falls back to the whole edition.
+    act(() => root.render(<StoryView id="retrieval" q="interface" beat="Products" />));
+    expect($(".rs-back")!.getAttribute("href")).toBe("/");
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("gives each note its own share title, description and URL", async () => {
+    const meta = await generateMetadata(params("shipping"));
+    expect(meta.openGraph).toMatchObject({ url: "https://news-aggregator.bookchaowalit.com/stories/shipping", title: "Shipping small is a way to protect attention", type: "article" });
+  });
+
+  it("links the footer to an MCP how-to page with the real tools", () => {
+    act(() => root.render(<McpPage />));
+    expect($('.rs-foot a[href="/mcp"]')!.textContent).toBe("MCP API");
+    expect(texts("tbody code")).toEqual(["list_stories", "get_story", "search_stories"]);
   });
 });
 

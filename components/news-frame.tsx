@@ -11,7 +11,7 @@ export function NewsFrame({ children }: { children: ReactNode }) {
       <main id="main" className="rs-main">{children}</main>
       <ReaderFoot
         source={SOURCE}
-        links={[{ href: "/api/mcp", label: "MCP API" }]}
+        links={[{ href: "/mcp", label: "MCP API" }]}
         note="Five authored sample notes, plainly labelled: no live feed or outside sources sit behind them. Read and saved marks stay in this browser."
       />
     </Reader>

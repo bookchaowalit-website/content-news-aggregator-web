@@ -1,24 +1,33 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { EmptyState, EntryList, ReaderHead, ResultCount, SearchForm, type Entry } from "@/components/reader-shell";
 import { NewsFrame } from "@/components/news-frame";
-import { CATEGORIES, countBy, filterStories, queueCounts, storyStore, type Filter, type Story } from "@/lib/news";
+import { CATEGORIES, countBy, filterStories, isCategory, queueCounts, storyStore, type Filter, type Story } from "@/lib/news";
 
-// The edition index: live search (never sent anywhere), beat chips whose counts follow the search, and
-// every story as one row that opens its page. Read / saved marks come from this browser's storage.
+// The edition index: live search, beat chips whose counts follow the search, and every story as one row that
+// opens its page. The search and beat live in the address (?q= / ?beat=, updated in place, never fetched), so
+// story links carry them and Back on a story returns to the same cut. Read / saved marks stay in this browser.
 
-export const storyEntry = (story: Story): Entry => ({
-  href: `/stories/${story.id}`,
+/** The edition's search and beat as a query string. */
+export const deskState = (q = "", beat = "") => `?${new URLSearchParams({ ...(beat && beat !== "All" ? { beat } : {}), ...(q.trim() ? { q: q.trim() } : {}) })}`.replace(/\?$/, "");
+
+export const storyEntry = (story: Story, from = ""): Entry => ({
+  href: `/stories/${story.id}${from}`,
   title: story.title,
   summary: story.summary,
   meta: [story.category, `${story.readMinutes} min read`, story.read ? "Read" : "Unread", ...(story.saved ? ["Saved"] : [])],
 });
 
-export function DeskView() {
+export function DeskView({ initialQuery = "", initialBeat = "" }: { initialQuery?: string; initialBeat?: string }) {
   const stories = useSyncExternalStore(storyStore.subscribe, storyStore.getSnapshot, storyStore.getServerSnapshot);
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<Filter>("All");
+  const [query, setQuery] = useState(initialQuery);
+  const [filter, setFilter] = useState<Filter>(isCategory(initialBeat) ? initialBeat : "All");
+  const from = deskState(query, filter);
+  // Keep the address in step with the view (replaceState: no history entry per keystroke, no request).
+  useEffect(() => {
+    if (window.location.search !== from) window.history.replaceState(null, "", `${window.location.pathname}${from}`);
+  }, [from]);
   const matching = filterStories(stories, "All", query);
   const shown = filterStories(matching, filter, "");
   const { unread, saved } = queueCounts(stories);
@@ -50,7 +59,7 @@ export function DeskView() {
             <p className="rs-count">{unread} unread · {saved} saved for later</p>
           </div>
           {shown.length > 0 ? (
-            <EntryList entries={shown.map(storyEntry)} />
+            <EntryList entries={shown.map((story) => storyEntry(story, from))} />
           ) : (
             <EmptyState title="No note in this cut" action={<button type="button" className="rs-plain" onClick={() => { setQuery(""); setFilter("All"); }}>Show every note</button>}>
               Try another beat or fewer words.
