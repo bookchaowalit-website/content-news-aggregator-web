@@ -126,6 +126,15 @@ describe("follow-ups", () => {
     expect($('.rs-foot a[href="/mcp"]')!.textContent).toBe("MCP API");
     expect(texts("tbody code")).toEqual(["list_stories", "get_story", "search_stories"]);
   });
+
+  it("says /api/mcp is a custom JSON-RPC subset, not a full MCP server", () => {
+    act(() => root.render(<McpPage />));
+    const text = document.body.textContent ?? "";
+    expect(text).not.toMatch(/answers Model Context Protocol/);
+    expect(text).toContain("Not a full MCP server");
+    expect(text).toContain("result.stories");
+    expect(text).toMatch(/standard MCP\s+clients expect/);
+  });
 });
 
 describe("site files", () => {
