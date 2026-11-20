@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { deskState, getHash, getServerHash, parseDeskHash, subscribeHash, writeDeskHash } from "@/lib/desk-hash";
+import { DESK_HASH_DELAY, deskState, getHash, getServerHash, parseDeskHash, subscribeHash, writeDeskHash } from "@/lib/desk-hash";
 import { EmptyState, EntryList, ReaderHead, ResultCount, SearchForm, type Entry } from "@/components/reader-shell";
 import { NewsFrame } from "@/components/news-frame";
 import { CATEGORIES, countBy, filterStories, isCategory, queueCounts, storyStore, type Filter, type Story } from "@/lib/news";
@@ -21,18 +21,28 @@ export const storyEntry = (story: Story, from = ""): Entry => ({
 
 export function DeskView() {
   const stories = useSyncExternalStore(storyStore.subscribe, storyStore.getSnapshot, storyStore.getServerSnapshot);
-  // Until the reader edits the cut, it comes from the fragment (so Back and shared links restore it); after that the
-  // view owns it, so a typed trailing space is not trimmed away by the round trip through the address.
-  const fromHash = parseDeskHash(useSyncExternalStore(subscribeHash, getHash, getServerHash));
-  const [edited, setEdited] = useState<{ query: string; filter: Filter } | null>(null);
+  // The cut comes from the fragment (so Back, Forward and shared links restore it) until the reader edits it; the edit
+  // then owns the view (a typed trailing space is not trimmed away by the round trip) for as long as the address still
+  // shows the fragment it was made on (until the write lands) or the one it wrote. Any other fragment came from
+  // navigation and wins again.
+  const hash = useSyncExternalStore(subscribeHash, getHash, getServerHash);
+  const fromHash = parseDeskHash(hash);
+  const [edit, setEdit] = useState<{ query: string; filter: Filter; base: string | null } | null>(null);
+  const edited = edit && (hash === edit.base || hash === deskState(edit.query, edit.filter)) ? edit : null;
   const query = edited?.query ?? fromHash.q;
   const filter: Filter = edited?.filter ?? (isCategory(fromHash.beat) ? fromHash.beat : "All");
+  const setEdited = (next: { query: string; filter: Filter }) => setEdit({ ...next, base: hash });
   const setQuery = (next: string) => setEdited({ query: next, filter });
   const setFilter = (next: Filter) => setEdited({ query, filter: next });
   const from = deskState(query, filter);
-  // Keep the fragment in step with an edited view.
+  // Keep the fragment in step with an edited view once typing pauses (one History call, not one per keystroke).
   useEffect(() => {
-    if (edited) writeDeskHash(from);
+    if (!edited) return;
+    const timer = window.setTimeout(() => {
+      // Written: from now on only that fragment keeps the edit; going back to the old one is navigation.
+      if (writeDeskHash(from)) setEdit((current) => (current ? { ...current, base: null } : current));
+    }, DESK_HASH_DELAY);
+    return () => window.clearTimeout(timer);
   }, [edited, from]);
   const matching = filterStories(stories, "All", query);
   const shown = filterStories(matching, filter, "");

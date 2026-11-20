@@ -59,9 +59,36 @@ describe("client navigation", () => {
     expect(clickLink("/stories/interfaces", {}, { download: "" })).toBe(false);
     expect(clickLink("https://bookchaowalit.com/")).toBe(false);
     expect(clickLink("/api/mcp")).toBe(false);
-    expect(clickLink("#main")).toBe(false);
     host.addEventListener("click", (event) => event.preventDefault(), { once: true });
     clickLink("/stories/interfaces");
     expect(push).not.toHaveBeenCalled();
+  });
+});
+
+describe("skip link (2026-11-20 review)", () => {
+  it("Skip to content focuses main without replacing the edition cut in the fragment", () => {
+    window.history.replaceState(null, "", "/stories/calm-software#beat=Products");
+    const main = document.createElement("main");
+    main.id = "main";
+    host.append(main);
+    const a = document.createElement("a");
+    a.href = "#main";
+    host.append(a);
+    const event = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 });
+    a.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+    expect(window.location.hash).toBe("#beat=Products");
+    expect(document.activeElement).toBe(main);
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("a same-page anchor with no target is left to the browser", () => {
+    window.history.replaceState(null, "", "/stories/calm-software");
+    const a = document.createElement("a");
+    a.href = "#nowhere";
+    host.append(a);
+    const event = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 });
+    a.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
   });
 });

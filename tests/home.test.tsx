@@ -2,7 +2,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { renderToString } from "react-dom/server";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Home from "@/app/page";
 import { StoryView } from "@/components/story-view";
 import { DeskView } from "@/components/desk-view";
@@ -103,7 +103,10 @@ describe("follow-ups", () => {
     act(() => root.render(<DeskView />));
     expect($<HTMLInputElement>(".rs-search input")!.value).toBe("small");
     expect(window.location.search).toBe("");
+    vi.useFakeTimers();
     click(button("Practice"));
+    act(() => { vi.advanceTimersByTime(400); });
+    vi.useRealTimers();
     expect(window.location.search).toBe("");
     expect(window.location.hash).toBe("#beat=Practice&q=small");
     expect($(".rs-entry-link")!.getAttribute("href")).toBe("/stories/shipping#beat=Practice&q=small");
@@ -147,6 +150,55 @@ describe("follow-ups", () => {
     expect(text).toContain("Not a full MCP server");
     expect(text).toContain("result.stories");
     expect(text).toMatch(/standard MCP\s+clients expect/);
+  });
+});
+
+describe("fragment state (2026-11-20 review)", () => {
+  afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); window.history.replaceState(null, "", "/"); });
+  const search = () => $<HTMLInputElement>(".rs-search input")!;
+
+  it("restores the cut when the fragment changes by navigation after an edit", () => {
+    vi.useFakeTimers();
+    window.history.replaceState(null, "", "/#beat=Products");
+    act(() => root.render(<DeskView />));
+    click(button("Practice"));
+    type(search(), "small");
+    act(() => { vi.advanceTimersByTime(400); });
+    expect(window.location.hash).toBe("#beat=Practice&q=small");
+    act(() => {
+      window.history.replaceState(null, "", "/#beat=Products");
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+    expect($('.rs-chip[aria-pressed="true"]')!.textContent).toBe("Products2");
+    expect(search().value).toBe("");
+    expect($(".rs-entry-link")!.getAttribute("href")).toBe("/stories/calm-software#beat=Products");
+  });
+
+  it("writes the address once typing pauses, not on every keystroke", () => {
+    vi.useFakeTimers();
+    window.history.replaceState(null, "", "/");
+    const replace = vi.spyOn(window.history, "replaceState");
+    act(() => root.render(<DeskView />));
+    for (const q of ["s", "sm", "sma", "smal", "small"]) {
+      type(search(), q);
+      act(() => { vi.advanceTimersByTime(100); });
+    }
+    expect(replace).not.toHaveBeenCalled();
+    act(() => { vi.advanceTimersByTime(400); });
+    expect(replace).toHaveBeenCalledTimes(1);
+    expect(window.location.hash).toBe("#q=small");
+  });
+
+  it("keeps filtering when the browser refuses to rewrite the address (Safari SecurityError)", () => {
+    vi.useFakeTimers();
+    window.history.replaceState(null, "", "/");
+    vi.spyOn(window.history, "replaceState").mockImplementation(() => { throw new DOMException("too many calls", "SecurityError"); });
+    act(() => root.render(<DeskView />));
+    type(search(), "small");
+    expect(() => act(() => { vi.advanceTimersByTime(400); })).not.toThrow();
+    expect(search().value).toBe("small");
+    expect($(".rs-count")!.textContent).toContain("for “small”");
+    expect(texts(".rs-entry-link").length).toBeLessThan(SEED.length);
   });
 });
 
