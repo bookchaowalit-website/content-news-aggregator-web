@@ -46,3 +46,12 @@ rather than an endless feed.
 ## Boundaries
 
 - Browser-only apart from the stateless, read-only `/api/mcp` route.
+
+## Known limits
+
+- The edition cut is written to the address only after typing pauses (300 ms). A story opened within that pause
+  carries the cut in its link, but Back returns to the address as it was, so the last edit to the filter can be lost.
+- When the router clears the fragment on its own (for example a client navigation to `/` with no fragment while the
+  edition is open), the list is not told and keeps showing the previous cut until the next edit or reload.
+- Moving between stories with a cut set (previous / next, links carrying `#beat=…&q=…`) does not scroll to the top
+  of the next story: the router treats the fragment as an anchor it cannot find.
