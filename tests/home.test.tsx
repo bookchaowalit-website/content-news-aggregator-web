@@ -43,7 +43,7 @@ afterEach(() => {
 
 describe("edition index", () => {
   it("server-renders every note as a link with its beat, read time and state, labelled as sample", async () => {
-    const html = renderToString(await Home({})).replace(/<!-- -->/g, "");
+    const html = renderToString(await Home()).replace(/<!-- -->/g, "");
     expect(html).toContain("sample notes, not live news");
     expect(html).toContain('href="/stories/small-models"');
     const text = html.replace(/<[^>]+>/g, "");
@@ -96,22 +96,35 @@ describe("note pages", () => {
 });
 
 describe("follow-ups", () => {
-  it("keeps search and beat in the address and in story links, and Back returns to the same cut", async () => {
-    const html = renderToString(await Home({ searchParams: Promise.resolve({ q: ["interface"], beat: "Products" }) }));
-    expect(html).toContain('href="/stories/calm-software?beat=Products&amp;q=interface"');
-    act(() => root.render(<DeskView initialQuery="small" initialBeat="Nope" />));
-    expect(window.location.search).toBe("?q=small");
+  it("keeps search and beat in the URL fragment (never sent to the server) and in story links; Back returns to the same cut", async () => {
+    // The pages take no search params: the cut lives in #fragment, which browsers never send in a request.
+    expect(Home.length).toBe(0);
+    window.history.replaceState(null, "", "/#q=small&beat=Nope");
+    act(() => root.render(<DeskView />));
+    expect($<HTMLInputElement>(".rs-search input")!.value).toBe("small");
+    expect(window.location.search).toBe("");
     click(button("Practice"));
-    expect(window.location.search).toBe("?beat=Practice&q=small");
-    expect($(".rs-entry-link")!.getAttribute("href")).toBe("/stories/shipping?beat=Practice&q=small");
-    act(() => root.render(<StoryView id="calm-software" beat="Products" />));
-    expect($(".rs-back")!.getAttribute("href")).toBe("/?beat=Products");
-    expect($('.rs-pager a[rel="next"]')!.getAttribute("href")).toBe("/stories/interfaces?beat=Products");
-    act(() => root.render(<StoryView id="calm-software" q="interface" beat="Products" />));
-    expect($(".rs-back")!.getAttribute("href")).toBe("/?beat=Products&q=interface");
+    expect(window.location.search).toBe("");
+    expect(window.location.hash).toBe("#beat=Practice&q=small");
+    expect($(".rs-entry-link")!.getAttribute("href")).toBe("/stories/shipping#beat=Practice&q=small");
+    type($<HTMLInputElement>(".rs-search input")!, "small ");
+    expect($<HTMLInputElement>(".rs-search input")!.value).toBe("small ");
+    act(() => root.unmount());
+    root = createRoot(host);
+    window.history.replaceState(null, "", "/stories/calm-software#beat=Products");
+    act(() => root.render(<StoryView id="calm-software" />));
+    expect($(".rs-back")!.getAttribute("href")).toBe("/#beat=Products");
+    expect($('.rs-pager a[rel="next"]')!.getAttribute("href")).toBe("/stories/interfaces#beat=Products");
+    window.history.replaceState(null, "", "/stories/calm-software#beat=Products&q=interface");
+    act(() => root.unmount());
+    root = createRoot(host);
+    act(() => root.render(<StoryView id="calm-software" />));
+    expect($(".rs-back")!.getAttribute("href")).toBe("/#beat=Products&q=interface");
     expect($(".rs-pager")).toBeNull();
     // A cut that does not hold the note falls back to the whole edition.
-    act(() => root.render(<StoryView id="retrieval" q="interface" beat="Products" />));
+    act(() => root.unmount());
+    root = createRoot(host);
+    act(() => root.render(<StoryView id="retrieval" />));
     expect($(".rs-back")!.getAttribute("href")).toBe("/");
     window.history.replaceState(null, "", "/");
   });

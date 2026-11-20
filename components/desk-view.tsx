@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { deskState, getHash, getServerHash, parseDeskHash, subscribeHash, writeDeskHash } from "@/lib/desk-hash";
 import { EmptyState, EntryList, ReaderHead, ResultCount, SearchForm, type Entry } from "@/components/reader-shell";
 import { NewsFrame } from "@/components/news-frame";
 import { CATEGORIES, countBy, filterStories, isCategory, queueCounts, storyStore, type Filter, type Story } from "@/lib/news";
 
 // The edition index: live search, beat chips whose counts follow the search, and every story as one row that
-// opens its page. The search and beat live in the address (?q= / ?beat=, updated in place, never fetched), so
-// story links carry them and Back on a story returns to the same cut. Read / saved marks stay in this browser.
+// opens its page. The search and beat live in the URL fragment (#q= / #beat=, updated in place, never sent to the
+// server), so story links carry them and Back on a story returns to the same cut. Read / saved marks stay in this browser.
 
-/** The edition's search and beat as a query string. */
-export const deskState = (q = "", beat = "") => `?${new URLSearchParams({ ...(beat && beat !== "All" ? { beat } : {}), ...(q.trim() ? { q: q.trim() } : {}) })}`.replace(/\?$/, "");
+export { deskState };
 
 export const storyEntry = (story: Story, from = ""): Entry => ({
   href: `/stories/${story.id}${from}`,
@@ -19,15 +19,21 @@ export const storyEntry = (story: Story, from = ""): Entry => ({
   meta: [story.category, `${story.readMinutes} min read`, story.read ? "Read" : "Unread", ...(story.saved ? ["Saved"] : [])],
 });
 
-export function DeskView({ initialQuery = "", initialBeat = "" }: { initialQuery?: string; initialBeat?: string }) {
+export function DeskView() {
   const stories = useSyncExternalStore(storyStore.subscribe, storyStore.getSnapshot, storyStore.getServerSnapshot);
-  const [query, setQuery] = useState(initialQuery);
-  const [filter, setFilter] = useState<Filter>(isCategory(initialBeat) ? initialBeat : "All");
+  // Until the reader edits the cut, it comes from the fragment (so Back and shared links restore it); after that the
+  // view owns it, so a typed trailing space is not trimmed away by the round trip through the address.
+  const fromHash = parseDeskHash(useSyncExternalStore(subscribeHash, getHash, getServerHash));
+  const [edited, setEdited] = useState<{ query: string; filter: Filter } | null>(null);
+  const query = edited?.query ?? fromHash.q;
+  const filter: Filter = edited?.filter ?? (isCategory(fromHash.beat) ? fromHash.beat : "All");
+  const setQuery = (next: string) => setEdited({ query: next, filter });
+  const setFilter = (next: Filter) => setEdited({ query, filter: next });
   const from = deskState(query, filter);
-  // Keep the address in step with the view (replaceState: no history entry per keystroke, no request).
+  // Keep the fragment in step with an edited view.
   useEffect(() => {
-    if (window.location.search !== from) window.history.replaceState(null, "", `${window.location.pathname}${from}`);
-  }, [from]);
+    if (edited) writeDeskHash(from);
+  }, [edited, from]);
   const matching = filterStories(stories, "All", query);
   const shown = filterStories(matching, filter, "");
   const { unread, saved } = queueCounts(stories);
@@ -61,7 +67,7 @@ export function DeskView({ initialQuery = "", initialBeat = "" }: { initialQuery
           {shown.length > 0 ? (
             <EntryList entries={shown.map((story) => storyEntry(story, from))} />
           ) : (
-            <EmptyState title="No note in this cut" action={<button type="button" className="rs-plain" onClick={() => { setQuery(""); setFilter("All"); }}>Show every note</button>}>
+            <EmptyState title="No note in this cut" action={<button type="button" className="rs-plain" onClick={() => setEdited({ query: "", filter: "All" })}>Show every note</button>}>
               Try another beat or fewer words.
             </EmptyState>
           )}

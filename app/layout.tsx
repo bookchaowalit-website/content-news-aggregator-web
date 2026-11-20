@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import { ClientNav } from "@/components/client-nav";
 import { SITE } from "@/components/news-frame";
 import "./globals.css";
 
@@ -22,5 +23,5 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   // The font variable sits on <html>: the Reader shell tokens live on :root and read it from there.
-  return <html lang="en" className={geistSans.variable}><body>{children}</body></html>;
+  return <html lang="en" className={geistSans.variable}><body>{children}<ClientNav /></body></html>;
 }

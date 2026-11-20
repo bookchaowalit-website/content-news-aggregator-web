@@ -4,9 +4,8 @@ import { SITE } from "@/components/news-frame";
 import { StoryView } from "@/components/story-view";
 import { SEED } from "@/lib/news";
 
-type Search = { q?: string | string[]; beat?: string | string[] };
-type Props = { params: Promise<{ id: string }>; searchParams?: Promise<Search> };
-const first = (value?: string | string[]) => (Array.isArray(value) ? value[0] : value) ?? "";
+// No searchParams: the edition cut a note was opened from rides in the URL fragment and is read in the browser.
+type Props = { params: Promise<{ id: string }> };
 export const dynamicParams = false;
 
 const find = async ({ params }: Props) => {
@@ -34,6 +33,5 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 export default async function StoryPage(props: Props) {
   const story = await find(props);
   if (!story) notFound();
-  const search = (await props.searchParams) ?? {};
-  return <StoryView id={story.id} q={first(search.q).slice(0, 200)} beat={first(search.beat)} />;
+  return <StoryView id={story.id} />;
 }

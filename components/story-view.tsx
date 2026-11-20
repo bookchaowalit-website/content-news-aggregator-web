@@ -4,14 +4,15 @@ import { useState, useSyncExternalStore } from "react";
 import { ArticleHeader, Pager, Prose, neighbours, type PagerLink } from "@/components/reader-shell";
 import { NewsFrame } from "@/components/news-frame";
 import { SEED, filterStories, isCategory, storyStore, updateStory, type Story } from "@/lib/news";
-import { deskState } from "@/components/desk-view";
+import { deskState, getHash, getServerHash, parseDeskHash, subscribeHash } from "@/lib/desk-hash";
 
 /**
  * One note: header, summary, why read it, then Mark as read / Save for later (this browser only) and previous / next.
- * Opened from a searched or filtered edition (?q= / ?beat=), Back returns to it and previous / next stay inside it.
+ * Opened from a searched or filtered edition (#q= / #beat=), Back returns to it and previous / next stay inside it.
  */
-export function StoryView({ id, q = "", beat = "" }: { id: string; q?: string; beat?: string }) {
+export function StoryView({ id }: { id: string }) {
   const stories = useSyncExternalStore(storyStore.subscribe, storyStore.getSnapshot, storyStore.getServerSnapshot);
+  const { q, beat } = parseDeskHash(useSyncExternalStore(subscribeHash, getHash, getServerHash));
   const [notice, setNotice] = useState("");
   const story = stories.find((s) => s.id === id) ?? SEED.find((s) => s.id === id)!;
   const cut = filterStories(stories, isCategory(beat) ? beat : "All", q);
