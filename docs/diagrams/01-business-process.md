@@ -8,19 +8,20 @@ Last reviewed: 2026-11-28 · commit `844f081`
 
 ```mermaid
 flowchart LR
-  AUTHOR["owner/AI แก้ SEED ใน lib/news.ts"] --> CI["CI: lint, typecheck, tests, build, security scan"]
-  CI --> DEPLOY["Vercel production (CLI; push main ไม่ deploy [ต้องยืนยัน])"]
+  AUTHOR["owner/AI แก้ SEED ใน lib/news.ts"] --> PR["push / PR"]
+  PR --> CI["CI: lint, typecheck, tests, build, security scan (ไม่ deploy)"]
+  OWNER["owner รัน Vercel CLI (ล่าสุดที่บันทึก 80622c5)"] --> DEPLOY["Vercel production [ต้องยืนยัน: Git link และ commit ที่รันจริง]"]
   VISITOR["ผู้เยี่ยมชม"] --> DESK["หน้า / (โต๊ะอ่าน)"]
   DEPLOY --> DESK
   DESK --> FILTER["กรองหมวด + ค้นหา (ในเบราว์เซอร์; เก็บใน URL hash หลังหยุดพิมพ์ 300 ms)"]
   DESK --> STORY["/stories/id: why-read-it note"]
   STORY --> MARK["mark read / saved"]
-  MARK --> STORE["localStorage news-desk-v2 (เฉพาะ boolean ของ id ที่รู้จัก)"]
+  MARK --> STORE["localStorage news-desk-v2: เขียนอาร์เรย์เรื่องทั้งชุด; ตอนอ่านกลับรับเฉพาะ read/saved boolean ของ id ที่รู้จัก ข้อความมาจาก SEED"]
   STORE -->|"ข้อมูลเสีย"| IGN["ละทิ้ง ใช้ SEED เดิม"]
-  STORE -->|"storage ถูกบล็อก"| SESSION["จำได้เฉพาะตอนเปิดหน้านี้"]
+  STORE -->|"storage ถูกบล็อก"| SESSION["เก็บในหน่วยความจำระหว่างการใช้งานครั้งนั้น (รวมการเปลี่ยนหน้าภายในเว็บ) ไม่คงอยู่เมื่อรีโหลด"]
   STORE --> DESK
-  DESK -->|error| SENTRY["Sentry (ถ้ามี DSN, ตัดข้อมูลส่วนตัว)"]
-  CLIENT["MCP client"] --> MCP["POST /api/mcp: list_stories, get_story, search_stories (read-only, sample: true)"]
+  DESK -->|error| SENTRY["Sentry (ถ้ามี DSN; beforeSend ลบ request/user/breadcrumbs/extra, เก็บเฉพาะ contexts ของแพลตฟอร์ม, ตัด ?query/#hash ในข้อความ/ชื่อไฟล์/transaction; ไม่ลบข้อมูลอื่นในข้อความ error เช่นอีเมลธรรมดา)"]
+  CLIENT["JSON-RPC client แบบกำหนดเอง/สคริปต์"] --> MCP["POST /api/mcp (MCP บางส่วน: result.stories/story ไม่ใช่ content array, ไม่มี streaming/session): list_stories, get_story, search_stories (read-only, sample: true)"]
   MCP -->|"tool/id/beat/method ไม่รู้จัก"| ERR["JSON-RPC error"]
 ```
 
@@ -37,7 +38,7 @@ Sources: `lib/news.ts`, `lib/desk-hash.ts`, `app/page.tsx`, `app/stories/[id]/pa
 | ID | As-Is → To-Be | Status | Owner | Evidence |
 |---|---|---|---|---|
 | G1 | ไม่มี To-Be ของกระบวนการ → owner กำหนดว่าจะต่อ feed จริง (RSS ฯลฯ) หรือคงเป็นเดโมตัวอย่าง | decide | owner | ไม่มีใน `PRODUCT.md` / `specs/` |
-| G2 | push main ไม่ deploy (Vercel Git link ชี้รีโปเก่า) → ผูก Vercel Git | decide | owner | `PRODUCT.md` §Live URL and deploy state (D9) |
+| G2 | push main ไม่ deploy ตามสถานะที่บันทึก 2026-10-23 (Vercel Git link ชี้รีโปเก่า) → ตรวจ Git link และ commit ที่ production รัน แล้วผูก Vercel Git [ต้องยืนยัน] | decide | owner | `PRODUCT.md` §Live URL and deploy state (D9) |
 
 ## Open questions
 
