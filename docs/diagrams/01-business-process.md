@@ -10,7 +10,7 @@ Last reviewed: 2026-11-28 · commit `844f081`
 flowchart LR
   AUTHOR["owner/AI แก้ SEED ใน lib/news.ts"] --> PR["push / PR"]
   PR --> CI["CI: lint, typecheck, tests, build, security scan (ไม่ deploy)"]
-  OWNER["owner รัน Vercel CLI (ล่าสุดที่บันทึก 80622c5)"] --> DEPLOY["Vercel production [ต้องยืนยัน: Git link และ commit ที่รันจริง]"]
+  PR -->|"Vercel Git link deploy บน push main (ตรวจ 2026-11-28; ไม่รอ CI)"| DEPLOY["Vercel production; production = main HEAD 2ac2577 (deploy ผ่าน Vercel Git)"]
   VISITOR["ผู้เยี่ยมชม"] --> DESK["หน้า / (โต๊ะอ่าน)"]
   DEPLOY --> DESK
   DESK --> FILTER["กรองหมวด + ค้นหา (ในเบราว์เซอร์; เก็บใน URL hash หลังหยุดพิมพ์ 300 ms)"]
@@ -27,7 +27,7 @@ flowchart LR
 
 Sources: `lib/news.ts`, `lib/desk-hash.ts`, `app/page.tsx`, `app/stories/[id]/page.tsx`, `app/api/mcp/route.ts`, `lib/sentry.ts`, `.github/workflows/ci.yml`, `README.md`, `PRODUCT.md`
 
-หมายเหตุ: `PRODUCT.md` (2026-10-23) ระบุว่า Vercel Git link ชี้รีโปเก่า จึงไม่ deploy จาก push main; สถานะปัจจุบัน [ต้องยืนยัน]. เครื่องหมาย read/saved ไม่ถูกส่งไป server และ MCP ไม่เห็นค่านี้
+หมายเหตุ: `PRODUCT.md` (2026-10-23) ระบุว่า Vercel Git link ชี้รีโปเก่า จึงไม่ deploy จาก push main แต่ตรวจ Vercel API 2026-11-28 แล้ว Git link ชี้ repo นี้ production branch `main` และ production = main HEAD 2ac2577 (deploy ผ่าน Vercel Git). เครื่องหมาย read/saved ไม่ถูกส่งไป server และ MCP ไม่เห็นค่านี้
 
 ## To-Be
 
@@ -38,7 +38,7 @@ Sources: `lib/news.ts`, `lib/desk-hash.ts`, `app/page.tsx`, `app/stories/[id]/pa
 | ID | As-Is → To-Be | Status | Owner | Evidence |
 |---|---|---|---|---|
 | G1 | ไม่มี To-Be ของกระบวนการ → owner กำหนดว่าจะต่อ feed จริง (RSS ฯลฯ) หรือคงเป็นเดโมตัวอย่าง | decide | owner | ไม่มีใน `PRODUCT.md` / `specs/` |
-| G2 | push main ไม่ deploy ตามสถานะที่บันทึก 2026-10-23 (Vercel Git link ชี้รีโปเก่า) → ตรวจ Git link และ commit ที่ production รัน แล้วผูก Vercel Git [ต้องยืนยัน] | decide | owner | `PRODUCT.md` §Live URL and deploy state (D9) |
+| G2 | push main ไม่ deploy ตามสถานะที่บันทึก 2026-10-23 (Vercel Git link ชี้รีโปเก่า) → ตรวจ Git link และ commit ที่ production รัน แล้วผูก Vercel Git | done | owner | `PRODUCT.md` §Live URL and deploy state (D9); Vercel API 2026-11-28: project `bookchaowalit-news-aggregator-frontend` Git link → `bookchaowalit-website/content-news-aggregator-web`, production branch `main` |
 
 ## Open questions
 
